@@ -352,7 +352,7 @@ class PyiCloudService(object):
             "dsWebAuthToken": self.session_data.get("session_token"),
             "extended_login": True,
             "trustToken": self.session_data.get("trust_token", ""),
-            "apple_id": self.user["accountName"],
+#            "apple_id": self.user["accountName"],
         }
 
         try:
