@@ -5,6 +5,7 @@ import inspect
 import json
 import logging
 from requests import Session
+from smart_open import open
 from tempfile import gettempdir
 from os import path, mkdir
 from re import match
@@ -39,6 +40,13 @@ HEADER_DATA = {
     "X-Apple-TwoSV-Trust-Token": "trust_token",
     "scnt": "scnt",
 }
+
+# the path patterns that are considered remote for cookies and sessions
+# and will supresss path.exists and other path cleaning attempts
+REMOTE_COOKIE_DIRECTORY_PATHS = ["s3://"]
+
+# Monkey patch open() in cookiejar to use smart_open for s3 support
+cookielib.open = open
 
 
 class PyiCloudPasswordFilter(logging.Filter):
@@ -223,9 +231,13 @@ class PyiCloudService(object):
         LOGGER.addFilter(self.password_filter)
 
         if cookie_directory:
-            self._cookie_directory = path.expanduser(path.normpath(cookie_directory))
-            if not path.exists(self._cookie_directory):
-                mkdir(self._cookie_directory, 0o700)
+            # if s3 do not manipulate cookie_directory or check for existence
+            if self.is_cookie_directory_remote(cookie_directory):
+                self._set_cookie_directory(cookie_directory)
+            else:
+                self._set_cookie_directory(path.expanduser(path.normpath(cookie_directory)))
+                if not path.exists(self._cookie_directory):
+                    mkdir(self._cookie_directory, 0o700)
         else:
             topdir = path.join(gettempdir(), "pyicloud")
             self._cookie_directory = path.join(topdir, getpass.getuser())
@@ -254,8 +266,9 @@ class PyiCloudService(object):
         )
 
         cookiejar_path = self.cookiejar_path
+        # cookielib tries to open the file before it reads it which will log error
         self.session.cookies = cookielib.LWPCookieJar(filename=cookiejar_path)
-        if path.exists(cookiejar_path):
+        if self.is_cookie_directory_remote(cookiejar_path) or path.exists(cookiejar_path):
             try:
                 self.session.cookies.load(ignore_discard=True, ignore_expires=True)
                 LOGGER.debug("Read cookies from %s" % cookiejar_path)
@@ -394,6 +407,14 @@ class PyiCloudService(object):
         if overrides:
             headers.update(overrides)
         return headers
+
+    def _set_cookie_directory(self, cookie_directory):
+        """Store self.cookie_directory in self._cookie_directory."""
+        self._cookie_directory = cookie_directory
+
+    def is_cookie_directory_remote(self, cookie_directory):
+        """Returns True if self.cookie_directory is hosted at s3 or some other remote path."""
+        return cookie_directory.lower().startswith(tuple(REMOTE_COOKIE_DIRECTORY_PATHS))
 
     @property
     def cookiejar_path(self):
