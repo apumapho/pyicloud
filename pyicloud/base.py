@@ -352,8 +352,7 @@ class PyiCloudService(object):
             "dsWebAuthToken": self.session_data.get("session_token"),
             "extended_login": True,
             "trustToken": self.session_data.get("trust_token", ""),
-            "apple_id": self.user["accountName"],
-            "password": self.user["password"]
+            #"apple_id": self.user["accountName"],
         }
 
         try:
@@ -364,8 +363,8 @@ class PyiCloudService(object):
             self.data = req.json()
         except PyiCloudAPIResponseException as error:
             msg = "Invalid authentication token."
-            LOGGER.debug("Caught exception here...msg: {msg} error: {error}")
-            raise PyiCloudFailedLoginException(msg, error)
+            LOGGER.debug(f"Caught exception here...msg: {msg} error: {error}")
+            #raise PyiCloudFailedLoginException(msg, error)
 
     def _authenticate_with_credentials_service(self, service):
         """Authenticate to a specific service using credentials."""
