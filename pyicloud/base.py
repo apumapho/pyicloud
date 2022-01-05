@@ -338,6 +338,7 @@ class PyiCloudService(object):
                 msg = "Invalid email/password combination."
                 raise PyiCloudFailedLoginException(msg, error)
 
+            LOGGER.debug("About to call self._authenticate_with_token()")
             self._authenticate_with_token()
 
         self._webservices = self.data["webservices"]
@@ -351,15 +352,19 @@ class PyiCloudService(object):
             "dsWebAuthToken": self.session_data.get("session_token"),
             "extended_login": True,
             "trustToken": self.session_data.get("trust_token", ""),
+            "apple_id": self.user["accountName"],
+            "password": self.user["password"]
         }
 
         try:
+            LOGGER.debug("About to call self.session.post")
             req = self.session.post(
                 "%s/accountLogin" % self.SETUP_ENDPOINT, data=json.dumps(data)
             )
             self.data = req.json()
         except PyiCloudAPIResponseException as error:
             msg = "Invalid authentication token."
+            LOGGER.debug("Caught exception here...msg: {msg} error: {error}")
             raise PyiCloudFailedLoginException(msg, error)
 
     def _authenticate_with_credentials_service(self, service):
