@@ -231,7 +231,7 @@ class PyiCloudService(object):
         LOGGER.addFilter(self.password_filter)
 
         if cookie_directory:
-            # if s3 do not manipulate cookie_directory or check for existence
+            # If using s3 for stroage do not manipulate cookie_directory or check for existence
             if self.is_cookie_directory_remote(cookie_directory):
                 self._set_cookie_directory(cookie_directory)
             else:
@@ -266,7 +266,7 @@ class PyiCloudService(object):
         )
 
         cookiejar_path = self.cookiejar_path
-        # cookielib tries to open the file before it reads it which will log error
+        # cookielib tries to open the file before it reads it which will log error if s3
         self.session.cookies = cookielib.LWPCookieJar(filename=cookiejar_path)
         if self.is_cookie_directory_remote(cookiejar_path) or path.exists(cookiejar_path):
             try:
@@ -352,7 +352,7 @@ class PyiCloudService(object):
             "dsWebAuthToken": self.session_data.get("session_token"),
             "extended_login": True,
             "trustToken": self.session_data.get("trust_token", ""),
-            #"apple_id": self.user["accountName"],
+            "apple_id": self.user["accountName"],
         }
 
         try:
@@ -364,7 +364,7 @@ class PyiCloudService(object):
         except PyiCloudAPIResponseException as error:
             msg = "Invalid authentication token."
             LOGGER.debug(f"Caught exception here...msg: {msg} error: {error}")
-            #raise PyiCloudFailedLoginException(msg, error)
+            raise PyiCloudFailedLoginException(msg, error)
 
     def _authenticate_with_credentials_service(self, service):
         """Authenticate to a specific service using credentials."""
