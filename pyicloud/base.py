@@ -327,6 +327,8 @@ class PyiCloudService(object):
             if self.session_data.get("session_id"):
                 headers["X-Apple-ID-Session-Id"] = self.session_data.get("session_id")
 
+            logging.debug(f"headers for signing: {repr(headers)}")
+                
             try:
                 req = self.session.post(
                     "%s/signin" % self.AUTH_ENDPOINT,
@@ -357,7 +359,7 @@ class PyiCloudService(object):
         }
 
         try:
-            LOGGER.debug("About to call self.session.post")
+            LOGGER.debug("About to POST to accountLogin")
             req = self.session.post(
                 "%s/accountLogin" % self.SETUP_ENDPOINT, data=json.dumps(data)
             )
